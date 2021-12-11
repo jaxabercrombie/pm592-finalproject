@@ -1,3 +1,12 @@
+---
+title: "PM-592 Final Project"
+author: "Jaxon Abercrombie"
+date: "12/10/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 # Load in Libraries and/or Sources
 library(tidyverse)
 library(dplyr)
@@ -9,10 +18,11 @@ library(stargazer)
 library(sjPlot)
 library(glmulti)
 library(LogisticDx)
-
-
+```
 
 # Functions
+
+```{r functions, warnings = FALSE}
 lrt.func <- function(model){
   model %>%
     anova(test = "LRT")
@@ -44,8 +54,8 @@ plot_resid_lev_logistic <- function(model)
     TRUE ~ "Normal"
   )
   f$txt <- ifelse(f$obs == "Normal", NA, f$rowname)
-  
-  ggplot(f, aes(h, sPr, label = txt)) + 
+
+    ggplot(f, aes(h, sPr, label = txt)) + 
     geom_point(shape = 1, aes(colour = obs, size = 0.5+0.25*numinf)) + 
     scale_colour_manual(values=c("Influence" = "red", "Outlier" = "maroon",
                                  "Leverage" = "darkgreen", "Normal" = "blue")) +
@@ -61,16 +71,16 @@ plot_resid_lev_logistic <- function(model)
              vjust = 2, family = "serif", fontface = "italic", 
              colour = "darkred", label = ann_label) +
     scale_size(guide = "none")
-}
+  }
+```
 
+$$\\[.3in]$$
 
+# Data Section
 
-
+```{r data, warnings = FALSE}
 # Load in Dataset
 heartfailure <- read.csv("heartfailure.csv")
-
-
-
 
 # Clean, Wrangle, and Explore Data
 names(heartfailure)[13] <- "death"
@@ -82,11 +92,13 @@ dim(heartfailure) # check dimensions to make sure they match source website
 sum(is.na(heartfailure)) # ensure there are no cells with NA
 
 # Summary statistics found in Table 1 in later code chunk
+```
 
-
+$$\\[.3in]$$
 
 ### Model Building Code and Output - Univariate
 
+```{r univariate, warnings = FALSE}
 ## MAIN INDEPENDENT CONTINUOUS VARIABLES FIRST
 
 # Creatinine Phosphokinase 
@@ -109,12 +121,12 @@ heartfailure <-
 glm(death ~ ef.fp, family = binomial, data = heartfailure) %>%
   anova(test = "LRT")
 ef.m2 <- glm(death ~ ef.fp, 
-             family = binomial, data = heartfailure) # new model with transformation
+            family = binomial, data = heartfailure) # new model with transformation
 lrt.func(ef.m2)
 
 # Platelets
 platelets.m <- glm(death ~ platelets, 
-                   family = binomial, data = heartfailure)
+            family = binomial, data = heartfailure)
 summary(platelets.m)
 mfp(death ~ fp(platelets), 
     data = heartfailure, family = binomial)
@@ -132,7 +144,7 @@ heartfailure <-
 glm(death ~ sc.fp, family = binomial, data = heartfailure) %>%
   anova(test = "LRT")
 sc.m2 <- glm(death ~ sc.fp, 
-             family = binomial, data = heartfailure) # new model with transformation
+            family = binomial, data = heartfailure) # new model with transformation
 lrt.func(sc.m)
 
 
@@ -149,13 +161,13 @@ lrt.func(ss.m)
 ## BINOMIAL VARIABLES AFTER
 # Anaemia
 anaemia.m <- glm(death ~ anaemia, 
-                 family = binomial, data = heartfailure)
+            family = binomial, data = heartfailure)
 summary(anaemia.m)
 lrt.func(anaemia.m)
 
 # High Blood Pressure
 hbp.m <- glm(death ~ high_blood_pressure, 
-             family = binomial, data = heartfailure)
+            family = binomial, data = heartfailure)
 summary(hbp.m)
 lrt.func(hbp.m)
 
@@ -171,43 +183,41 @@ lrt.func(age.m)
 
 # Sex
 sex.m <- glm(death ~ sex, 
-             family = binomial, data = heartfailure)
+            family = binomial, data = heartfailure)
 summary(sex.m)
 lrt.func(sex.m)
 
 # Diabetes
 diabetes.m <- glm(death ~ diabetes, 
-                  family = binomial, data = heartfailure)
+            family = binomial, data = heartfailure)
 summary(diabetes.m)
 lrt.func(diabetes.m)
 
 # Smoking
 smoke.m <- glm(death ~ smoking, 
-               family = binomial, data = heartfailure)
+            family = binomial, data = heartfailure)
 summary(smoke.m)
 lrt.func(smoke.m)
+```
 
+$$\\[.3in]$$
 
+### Model Building and Output - Multivariate
 
-###
-# Based on the univariate analyses and clinical signficance of variables, 
-#the preliminary final model begins as...
+```{r multivariate}
+# Based on the univariate analyses and clinical signficance of variables, the preliminary final model begins as...
 
 pfm1 <- glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
               high_blood_pressure + platelets + sc.fp + serum_sodium,
             family = binomial, data = heartfailure)
 summary(pfm1)
 
-# The first preliminary final model indicates statistical significance with 
-#creat. phos., ef.fp, hbp, platelets, and sc. Before the variables that are 
-#not significant are removed, I will check to make sure potential confounders 
-#or effect modifiers do not change things...
+# The first preliminary final model indicates statistical significance with creat. phos., ef.fp, hbp, platelets, and sc. Before the variables that are not significant are removed, I will check to make sure potential confounders or effect modifiers do not change things...
 
 # Adding diabetes (potential confounder)
 pfm1.diabetes <- glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
-                       high_blood_pressure + platelets + sc.fp + serum_sodium + 
-                       diabetes,
-                     family = binomial, data = heartfailure)
+              high_blood_pressure + platelets + sc.fp + serum_sodium + diabetes,
+            family = binomial, data = heartfailure)
 summary(pfm1)
 summary(pfm1.diabetes)
 
@@ -215,8 +225,8 @@ summary(pfm1.diabetes)
 
 # Adding smoking (potential confounder)
 pfm1.smoke <- glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
-                    high_blood_pressure + platelets + sc.fp + serum_sodium + 
-                    smoking,family = binomial, data = heartfailure)
+              high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
+            family = binomial, data = heartfailure)
 summary(pfm1)
 summary(pfm1.smoke)
 
@@ -226,55 +236,58 @@ median(heartfailure$age)
 age.young <-
   heartfailure %>%
   filter(age < 60)
-
+  
 age.older <-
   heartfailure %>%
   filter(age >= 60)
 
 pfm1.ageY <- 
   glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
-        high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
-      family = binomial, data = age.young)
+              high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
+            family = binomial, data = age.young)
 summary(pfm1.ageY)
 
 pfm1.ageO <- 
   glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
-        high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
-      family = binomial, data = age.older)
+              high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
+            family = binomial, data = age.older)
 summary(pfm1.ageO)
 
 # Adding sex (potential effect modifier)
 sex.male <-
   heartfailure %>%
   filter(sex == 1)
-
+  
 sex.female <-
   heartfailure %>%
   filter(sex == 0)
 
 pfm1.sexM <- 
   glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
-        high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
-      family = binomial, data = sex.male)
+              high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
+            family = binomial, data = sex.male)
 summary(pfm1.sexM)
 
 pfm1.sexF <- 
   glm(death ~ anaemia + creatinine_phosphokinase + ef.fp + 
-        high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
-      family = binomial, data = sex.female)
+              high_blood_pressure + platelets + sc.fp + serum_sodium + smoking,
+            family = binomial, data = sex.female)
 summary(pfm1.sexF)
+```
 
-
+$$\\[.3in]$$
 
 ### Assessing Final Model
+
+```{r final}
 # Run best subset with chosen independent variables
 best_subset <- glmulti(death ~ anaemia + 
-                         age:creatinine_phosphokinase + sex:ef.fp + 
-                         high_blood_pressure + platelets + 
-                         sc.fp + serum_sodium + age + sex, 
-                       data = heartfailure, level = 1, 
-                       family = binomial, crit="aicc", 
-                       confsetsize=128)
+          age:creatinine_phosphokinase + sex:ef.fp + 
+          high_blood_pressure + platelets + 
+          sc.fp + serum_sodium + age + sex, 
+        data = heartfailure, level = 1, 
+        family = binomial, crit="aicc", 
+        confsetsize=128)
 
 weightable(best_subset) %>% 
   head()
@@ -308,9 +321,13 @@ mfp(death ~ 1 + fp(age) + fp(anaemia) + fp(creatinine_phosphokinase) +
 DescTools::VIF(final.m)
 
 plot_resid_lev_logistic(final.m)
+```
 
+$$\\[.3in]$$
 
 ### Tables
+
+```{r tables&figures}
 # Table 1 - summary statistics for variables
 options(scipen = 999)
 
@@ -346,5 +363,4 @@ stargazer(final.m,
           type = "text", align=TRUE, 
           title = "Final Model",
           omit.stat=c("LL","f"), p.auto = TRUE)
-
-
+```
